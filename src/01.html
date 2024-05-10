@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WebGL2 - 2D image 3x3 convolution</title>
     <link rel="shortcut icon" href="#">
+    <style>
+        html, body {margin: 0; padding: 0; position: absolute; width: 100%; height: 100%}
+
+        canvas {position: absolute; left: 10px; top: 10px; }
+    </style>
 </head>
 <body>
-    <canvas id="canvas" style="width:0;height:0;"></canvas>
+    <canvas id="canvas"></canvas>
 </body>
 <script src="js/webgl-utils.js"></script>
 <script src="js/palette.js"></script>
@@ -102,19 +107,11 @@ void main() {
 }
 `;
 
-// fetch('resources/20010290').then(async response => {
-//     const arrayBuffer = await response.arrayBuffer()
-//     const traceCount = new Uint32Array(arrayBuffer, 0, 4)[0]
-//     const data = new Float32Array(arrayBuffer, traceCount * 4 * 2 + 4)
-//     let width = traceCount
-//     const height = data.length / width
-//     render(data, width, height, -32766.0, 32766.0, paletteAmplitude)
-// })
-
 function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
+
   const canvas = document.querySelector("#canvas");
-  const canvasWidth = 2000
-  const canvasHeight = 2000
+  const canvasWidth = document.body.clientWidth - 200
+  const canvasHeight = document.body.clientHeight - 20
   const targetWidth = 420
   const targetHeight = 350
   canvas.width = canvasWidth
@@ -216,16 +213,13 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
                 srcType,
                 image);
 
-  // Bind the position buffer so gl.bufferData that will be called
-  // in setRectangle puts data in the position buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
   setRectangle(gl, 0, 0, targetWidth, targetHeight);
 
   drawWithKernel();
 
   function drawWithKernel() {
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    webglUtils.resizeCanvasToDisplaySize(gl.canvas, window.devicePixelRatio);
 
     // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -243,10 +237,8 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
     // Tell the shader to get the texture from texture unit 0
     gl.uniform1i(uImageLocation, 0);
 
-    // set the kernel and it's weight
     gl.uniform1f(uRangeMinLocation, rangeMin)
     gl.uniform1f(uRangeMaxLocation, rangeMax)
-    // gl.uniform1i(uPaletteLocation, palette.length / 4)
     gl.uniform4fv(uPaletteLocation, palette);
 
     gl.uniformMatrix3fv(uProjectionLocation, false, [
@@ -290,7 +282,7 @@ const image = new Float32Array([
     0, 20, 0, 0, 0, 0, 0,
     0,  0, 5, 5, 5, 0, 0,
     0,  0, 0, 0, 50, 0, 0,
-    0, 20, 5, 5, 5, 0, 0,
+    0, 20, 5, 50, 5, 0, 0,
     0,  0, 0, 0, 0, 0, 0,
     0,  0, 0, 0, 0, 0, 0
 ])
