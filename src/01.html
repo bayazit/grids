@@ -108,12 +108,11 @@ void main() {
 `;
 
 function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
-
   const canvas = document.querySelector("#canvas");
   const canvasWidth = document.body.clientWidth - 200
   const canvasHeight = document.body.clientHeight - 20
-  const targetWidth = 420
-  const targetHeight = 350
+  const targetWidth = canvasWidth
+  const targetHeight = canvasHeight
   canvas.width = canvasWidth
   canvas.height = canvasHeight
   canvas.style.width = `${canvasWidth}px`
