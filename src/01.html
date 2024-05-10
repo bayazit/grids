@@ -55,60 +55,6 @@ uniform float uMajorIsolineWidth;
 in vec2 vTexCoord;
 out vec4 outColor;
 
-float getDynamicVisibility(float position, float majorGridFrequency) {
-  // Лежит ли точка на главной линии
-  if (floor(position + 0.5) == floor(position / majorGridFrequency + 0.5) * majorGridFrequency) {
-    return 1.0;
-  }
-  // видимость вспомогательных линий
-  return 0.0;
-}
-
-float isPointOnLine(float position, float differentialLength) {
-  // -0,5; ...  0,5; - нормализованное расстояние до линии. если 0 - значит лежит на линии
-  float fractionPartOfPosition = position - floor(position + 0.5);
-  // зная расстояние между пикселями, адаптируем расстояние до линии к размерам экрана
-  fractionPartOfPosition /= differentialLength;
-  fractionPartOfPosition = clamp(fractionPartOfPosition, -1.0, 1.0);
-
-  // чем ближе расстояние до линии тем больше result
-  float result = 0.5 + 0.5 * cos(fractionPartOfPosition * PI); // Convert to 0-1 for antialiasing.
-  return result;
-}
-
-float getAnisotropicAttenuation(float differentialLength, float maxNumberOfLines) {
-  // регуляция степени размытия
-  // чем дальше камера от сетки, тем меньше размытие
-  // const float maxNumberOfLines = 5.0;
-  return clamp(1.0 / (differentialLength + 1.0) - 1.0 / maxNumberOfLines / 10.0, 0.0, 1.0);
-}
-
-float contributionOnAxis(
-  float position,
-  float majorGridFrequency,
-  float minorLineWidth,
-  float lineWidth
-) {
-  // расстояние между пикселями в нормализованной сетке
-  // чем дальше камера от сетки, тем расстояние между пикселями меньше
-  float _differentialLength = length(vec2(dFdx(position), dFdy(position)));
-
-  float differentialLength = max(0.000001, _differentialLength);
-  differentialLength *= SQRT2; // Multiply by SQRT2 for diagonal length
-
-  // Calc dynamic visibility.
-  float dynamicVisibility = getDynamicVisibility(position, majorGridFrequency);
-
-  // поправка на ширину линии
-  float _lineWidth = dynamicVisibility == 0.0 ? minorLineWidth : lineWidth;
-  differentialLength *= _lineWidth * 0.5;
-
-  // Is the point on the line.
-  float result = isPointOnLine(position, differentialLength);
-
-  return result;
-}
-
 mat2 getTexturePixels2x2(vec2 texCoord, vec2 onePixelSize) {
   return mat2(
     texture(uImage, onePixelSize * (texCoord + vec2(0.5, 0.5))).r,
@@ -147,31 +93,11 @@ void main() {
   float val = dot(vec2(1.0 - dxy.x, dxy.x) * A, vec2(1.0 - dxy.y, dxy.y));
   vec4 depthColor = getPalleteColor(val);
 
-  // float isolinePosition = (uBaseline - val) / uIsolineStep;
-
-  // float isoline = contributionOnAxis(
-  //   isolinePosition,
-  //   uMajorIsoline,
-  //   uMinorIsolineWidth,
-  //   uMajorIsolineWidth
-  // );
-
-  //outColor = mix(depthColor, isolineColor, smoothstep(0.0, 0.25, isoline));
-
   float isolinePosition = abs((val - uBaseline) / uIsolineStep);
   float deltaPosition = abs(isolinePosition - round(isolinePosition));
   // Горизонтальные, вертиклальные линии: 0.00375, 0.0025
   float edge0 = 0.00375;
   float edge1 = 0.0025;
-  float tg = abs(dFdy(isolinePosition) / dFdx(isolinePosition));
-  if (tg >= 0.2679 && tg < 3.732) {
-    edge0 = 0.0025;
-    edge1 = 0.00124;
-  } else if (!isinf(tg) && !isnan(tg)) {
-    edge0 = 0.005;
-    edge1 = 0.00375;
-  }
-  // 0.005, 0.00375
   outColor = mix(depthColor, isolineColor, smoothstep(edge0, edge1, deltaPosition));
 }
 `;
@@ -186,7 +112,7 @@ void main() {
 // })
 
 function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
-  var canvas = document.querySelector("#canvas");
+  const canvas = document.querySelector("#canvas");
   const canvasWidth = 2000
   const canvasHeight = 2000
   const targetWidth = 420
@@ -196,7 +122,7 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   canvas.style.width = `${canvasWidth}px`
   canvas.style.height = `${canvasHeight}px`
 
-  var gl = canvas.getContext("webgl2");
+  const gl = canvas.getContext("webgl2");
   if (!gl) {
     return;
   }
@@ -266,23 +192,14 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   gl.vertexAttribPointer(
       aTextureCoordLocation, size, type, normalize, stride, offset);
 
-  // Create a texture.
   var texture = gl.createTexture();
 
-  // make unit 0 the active texture uint
-  // (ie, the unit all other texture commands will affect
   gl.activeTexture(gl.TEXTURE0 + 0);
-
-  // Bind it to texture unit 0's 2D bind point
   gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // Set the parameters so we don't need mips and so we're not filtering
-  // and we don't repeat at the edges.
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
   // Upload the image into the texture.
   var mipLevel = 0;               // the largest mip
   var internalFormat = gl.R32F;   // format we want in the texture
@@ -342,7 +259,7 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
     gl.uniform1f(uIsolineStepLocation, 5)
     gl.uniform1f(uBaselineLocation, 1)
     gl.uniform1f(uMajorIsolineLocation, 5)
-    gl.uniform1f(uMinorIsolineWidthLocation, 3)
+    gl.uniform1f(uMinorIsolineWidthLocation, 1)
     gl.uniform1f(uMajorIsolineWidthLocation, 3)
 
     // Draw the rectangle.
@@ -369,16 +286,16 @@ function setRectangle(gl, x, y, width, height) {
 }
 
 const image = new Float32Array([
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 5, 5, 5, 0, 0,
-    0, 0, 0, 0, 5, 0, 0,
-    0, 0, 5, 5, 5, 0, 0,
-    0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0
+    0,  0, 0, 0, 0, 0, 0,
+    0, 20, 0, 0, 0, 0, 0,
+    0,  0, 5, 5, 5, 0, 0,
+    0,  0, 0, 0, 50, 0, 0,
+    0, 20, 5, 5, 5, 0, 0,
+    0,  0, 0, 0, 0, 0, 0,
+    0,  0, 0, 0, 0, 0, 0
 ])
 
-render(image, 7, 7, 0, 5, paletteAmplitude)
+render(image, 7, 7, 0, 50, paletteAmplitude)
 
 </script>
 </html>
