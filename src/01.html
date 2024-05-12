@@ -316,8 +316,11 @@ let mouseY = 0
 canvas.onwheel = (event) => {
   let k = 1.25
   k = event.deltaY > 0 ? 1 / k : k
+
   zoom.kx *= k
   zoom.ky *= k
+  zoom.x = zoom.x * k - event.offsetX * window.devicePixelRatio * (k - 1)
+  zoom.y = zoom.y * k - event.offsetY * window.devicePixelRatio * (k - 1)
 
   render01()
 }
