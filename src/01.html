@@ -136,54 +136,42 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   }
 
   // setup GLSL program
-  var program = webglUtils.createProgramFromSources(gl,
+  const program = webglUtils.createProgramFromSources(gl,
       [vertexShaderSource, fragmentShaderSource]);
 
   // look up where the vertex data needs to go.
-  var aPositionLocation = gl.getAttribLocation(program, "aPosition");
-  var aTextureCoordLocation = gl.getAttribLocation(program, "aTextureCoord");
+  const aPositionLocation = gl.getAttribLocation(program, "aPosition");
+  const aTextureCoordLocation = gl.getAttribLocation(program, "aTextureCoord");
 
-  var uProjectionLocation = gl.getUniformLocation(program, "uProjection");
-  var uNullValueLocation = gl.getUniformLocation(program, "uNullValue");
-  var uRangeMinLocation = gl.getUniformLocation(program, "uRangeMin");
-  var uRangeMaxLocation = gl.getUniformLocation(program, "uRangeMax");
-  var uPaletteLocation = gl.getUniformLocation(program, "uPalette");
+  const uProjectionLocation = gl.getUniformLocation(program, "uProjection");
+  const uNullValueLocation = gl.getUniformLocation(program, "uNullValue");
+  const uRangeMinLocation = gl.getUniformLocation(program, "uRangeMin");
+  const uRangeMaxLocation = gl.getUniformLocation(program, "uRangeMax");
+  const uPaletteLocation = gl.getUniformLocation(program, "uPalette");
 
-  var uIsolineStepLocation = gl.getUniformLocation(program, "uIsolineStep");
-  var uBaselineLocation = gl.getUniformLocation(program, "uBaseline");
-  var uMajorIsolineLocation = gl.getUniformLocation(program, "uMajorIsoline");
-  var uMinorIsolineWidthLocation = gl.getUniformLocation(program, "uMinorIsolineWidth");
-  var uMajorIsolineWidthLocation = gl.getUniformLocation(program, "uMajorIsolineWidth");
+  const uIsolineStepLocation = gl.getUniformLocation(program, "uIsolineStep");
+  const uBaselineLocation = gl.getUniformLocation(program, "uBaseline");
+  const uMajorIsolineLocation = gl.getUniformLocation(program, "uMajorIsoline");
+  const uMinorIsolineWidthLocation = gl.getUniformLocation(program, "uMinorIsolineWidth");
+  const uMajorIsolineWidthLocation = gl.getUniformLocation(program, "uMajorIsolineWidth");
 
-  var uImageLocation = gl.getUniformLocation(program, "uImage");
+  const uImageLocation = gl.getUniformLocation(program, "uImage");
 
-  // Create a vertex array object (attribute state)
-  var vao = gl.createVertexArray();
-
-  // and make it the one we're currently working with
+  const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
-
-  // Create a buffer and put a single pixel space rectangle in
-  // it (2 triangles)
-  var positionBuffer = gl.createBuffer();
-
-  // Turn on the attribute
+  const positionBuffer = gl.createBuffer();
   gl.enableVertexAttribArray(aPositionLocation);
-
-  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
   // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
-  gl.vertexAttribPointer(
-      aPositionLocation, size, type, normalize, stride, offset);
+  let size = 2;          // 2 components per iteration
+  let type = gl.FLOAT;   // the data is 32bit floats
+  let normalize = false; // don't normalize the data
+  let stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  let offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(aPositionLocation, size, type, normalize, stride, offset);
 
-  // provide texture coordinates for the rectangle.
-  var texCoordBuffer = gl.createBuffer();
+  const texCoordBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
   const [x1, y1, x2, y2] = [0, 0, 1, 1]
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2]), gl.STATIC_DRAW);
@@ -192,15 +180,15 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   gl.enableVertexAttribArray(aTextureCoordLocation);
 
   // Tell the attribute how to get data out of texCoordBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
+    size = 2;          // 2 components per iteration
+    type = gl.FLOAT;   // the data is 32bit floats
+    normalize = false; // don't normalize the data
+    stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    offset = 0;        // start at the beginning of the buffer
   gl.vertexAttribPointer(
-      aTextureCoordLocation, size, type, normalize, stride, offset);
+  aTextureCoordLocation, size, type, normalize, stride, offset);
 
-  var texture = gl.createTexture();
+  const texture = gl.createTexture();
 
   gl.activeTexture(gl.TEXTURE0 + 0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -209,11 +197,12 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   // Upload the image into the texture.
-  var mipLevel = 0;               // the largest mip
-  var internalFormat = gl.R32F;   // format we want in the texture
-  var srcFormat = gl.RED;         // format of data we are supplying
-  var srcType = gl.FLOAT;         // type of data we are supplying
-  var border = 0
+
+  const mipLevel = 0;               // the largest mip
+  const internalFormat = gl.R32F;   // format we want in the texture
+  const srcFormat = gl.RED;         // format of data we are supplying
+  const srcType = gl.FLOAT;         // type of data we are supplying
+  const border = 0;
   gl.texImage2D(gl.TEXTURE_2D,
                 mipLevel,
                 internalFormat,
