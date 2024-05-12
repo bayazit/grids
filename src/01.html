@@ -1,21 +1,22 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>WebGL2 - 2D image 3x3 convolution</title>
-    <link rel="shortcut icon" href="#">
-    <style>
-        html, body {margin: 0; padding: 0; position: absolute; width: 100%; height: 100%}
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+        <title>WebGL2 - 2D image 3x3 convolution</title>
+        <link rel="shortcut icon" href="#">
+        <style>
+            html, body {margin: 0; padding: 0; position: absolute; width: 100%; height: 100%}
 
-        canvas {position: absolute; left: 10px; top: 10px; }
-    </style>
-</head>
-<body>
-    <canvas id="canvas"></canvas>
-</body>
-<script src="js/webgl-utils.js"></script>
-<script src="js/palette.js"></script>
+            canvas {position: absolute; left: 10px; top: 10px; }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+    </body>
+    <script src="js/webgl-utils.js"></script>
+    <script src="js/palette.js"></script>
+    <script src="js/gl-matrix-min.js"></script>
 <script>
 "use strict";
 
@@ -96,16 +97,26 @@ void main() {
   }
 
   float val = dot(vec2(1.0 - dxy.x, dxy.x) * A, vec2(1.0 - dxy.y, dxy.y));
+  float f = abs(fwidth(val));
   vec4 depthColor = getPalleteColor(val);
 
   float isolinePosition = abs((val - uBaseline) / uIsolineStep);
   float deltaPosition = abs(isolinePosition - round(isolinePosition));
+  deltaPosition /= f;
+  deltaPosition /= 30.0;
   // Горизонтальные, вертиклальные линии: 0.00375, 0.0025
   float edge0 = 0.00375;
   float edge1 = 0.0025;
   outColor = mix(depthColor, isolineColor, smoothstep(edge0, edge1, deltaPosition));
 }
 `;
+
+const zoom = {
+    x : 0,
+    y : 0,
+    kx : 1,
+    ky : 1
+}
 
 function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   const canvas = document.querySelector("#canvas");
@@ -213,7 +224,7 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
                 image);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  setRectangle(gl, 0, 0, targetWidth, targetHeight);
+  setRectangle(gl, 0, 0, targetWidth * window.devicePixelRatio, targetHeight* window.devicePixelRatio);
 
   drawWithKernel();
 
@@ -240,11 +251,11 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
     gl.uniform1f(uRangeMaxLocation, rangeMax)
     gl.uniform4fv(uPaletteLocation, palette);
 
-    gl.uniformMatrix3fv(uProjectionLocation, false, [
-        0.004761904943734407, 0, 0,
-        0, -0.0057142856530845165, 0,
-        -1, 1, 1
-    ])
+    let projection = glMatrix.mat3.projection(glMatrix.mat3.create(), canvas.width, canvas.height);
+    projection = glMatrix.mat3.translate(glMatrix.mat3.create(), projection, [zoom.x, zoom.y])
+    projection = glMatrix.mat3.scale(glMatrix.mat3.create(), projection, [zoom.kx, zoom.ky])
+
+    gl.uniformMatrix3fv(uProjectionLocation, false, projection);
 
     gl.uniform1f(uNullValueLocation, 1000)
     gl.uniform1f(uIsolineStepLocation, 5)
@@ -281,14 +292,57 @@ const image = new Float32Array([
     0, 20, 0, 0, 0, 0, 0,
     0,  0, 5, 5, 5, 0, 0,
     0,  0, 0, 0, 50, 0, 0,
-    0, 20, 5, 50, 5, 0, 0,
+    0, 20, 5, 100, 5, 0, 0,
     0,  0, 0, 0, 0, 0, 0,
     0,  0, 0, 0, 0, 0, 0
 ])
 
-render(image, 7, 7, 0, 50, paletteAmplitude)
+const render01 = () => {
+    render(image, 7, 7, 0, 100, paletteAmplitude)
+}
+
+render01()
+
+const canvas = document.querySelector("#canvas");
+let isMoving = false
+let mouseX = 0
+let mouseY = 0
+
+canvas.onwheel = (event) => {
+    let k = 1.25
+    k = event.deltaY > 0 ? 1 / k : k
+    zoom.kx *= k
+    zoom.ky *= k
+
+    render01()
+}
+
+canvas.onmousedown = (event) => {
+    isMoving = true
+    mouseX = event.offsetX
+    mouseY = event.offsetY
+}
+
+canvas.onmousemove = (event) => {
+  if (isMoving) {
+      zoom.x += (event.offsetX - mouseX) * window.devicePixelRatio
+      zoom.y += (event.offsetY - mouseY) * window.devicePixelRatio
+      mouseX = event.offsetX
+      mouseY = event.offsetY
+      render01()
+  }
+}
+
+canvas.onmouseup = () => {
+    if (isMoving) {
+        isMoving = false
+    }
+}
 
 </script>
+
 </html>
+
+
 
 
