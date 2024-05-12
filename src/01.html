@@ -276,7 +276,11 @@ function setRectangle(gl, x, y, width, height) {
   ]), gl.STATIC_DRAW);
 }
 
-const image = new Float32Array([
+let mapWidth = 7
+let mapHeight = 7
+let mapMinValue = 0
+let mapMaxValue = 100
+let mapImage = new Float32Array([
     0,  0, 0, 0, 0, 0, 0,
     0, 20, 0, 0, 0, 0, 0,
     0,  0, 0, 5, 5, 0, 0,
@@ -287,7 +291,7 @@ const image = new Float32Array([
 ])
 
 const render01 = () => {
-    render(image, 7, 7, 0, 100, paletteAmplitude)
+  render(mapImage, mapWidth, mapHeight, mapMinValue, mapMaxValue, paletteAmplitude)
 }
 
 render01()
