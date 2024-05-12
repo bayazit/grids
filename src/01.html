@@ -17,6 +17,7 @@
     <script src="js/webgl-utils.js"></script>
     <script src="js/palette.js"></script>
     <script src="js/gl-matrix-min.js"></script>
+    <script src="js/irapParser.js"></script>
 <script>
 "use strict";
 
@@ -247,7 +248,7 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
 
     gl.uniformMatrix3fv(uProjectionLocation, false, projection);
 
-    gl.uniform1f(uNullValueLocation, 1000)
+    gl.uniform1f(uNullValueLocation, IRAP_NULL_VALUE)
     gl.uniform1f(uIsolineStepLocation, 5)
     gl.uniform1f(uBaselineLocation, 1)
     gl.uniform1f(uMajorIsolineLocation, 5)
@@ -294,7 +295,18 @@ const render01 = () => {
   render(mapImage, mapWidth, mapHeight, mapMinValue, mapMaxValue, paletteAmplitude)
 }
 
-render01()
+fetch('data/M.irap')
+  .then(res => res.text())
+  .then(text => {
+    const a = parseIrap(text)
+    mapWidth = a.mapWidth
+    mapHeight = a.mapHeight
+    mapMinValue = a.mapMinValue
+    mapMaxValue = a.mapMaxValue
+    mapImage = a.mapImage
+    render01()
+  })
+  .catch(e => console.error(e));
 
 const canvas = document.querySelector("#canvas");
 let isMoving = false
@@ -302,34 +314,34 @@ let mouseX = 0
 let mouseY = 0
 
 canvas.onwheel = (event) => {
-    let k = 1.25
-    k = event.deltaY > 0 ? 1 / k : k
-    zoom.kx *= k
-    zoom.ky *= k
+  let k = 1.25
+  k = event.deltaY > 0 ? 1 / k : k
+  zoom.kx *= k
+  zoom.ky *= k
 
-    render01()
+  render01()
 }
 
 canvas.onmousedown = (event) => {
-    isMoving = true
-    mouseX = event.offsetX
-    mouseY = event.offsetY
+  isMoving = true
+  mouseX = event.offsetX
+  mouseY = event.offsetY
 }
 
 canvas.onmousemove = (event) => {
   if (isMoving) {
-      zoom.x += (event.offsetX - mouseX) * window.devicePixelRatio
-      zoom.y += (event.offsetY - mouseY) * window.devicePixelRatio
-      mouseX = event.offsetX
-      mouseY = event.offsetY
-      render01()
+    zoom.x += (event.offsetX - mouseX) * window.devicePixelRatio
+    zoom.y += (event.offsetY - mouseY) * window.devicePixelRatio
+    mouseX = event.offsetX
+    mouseY = event.offsetY
+    render01()
   }
 }
 
 canvas.onmouseup = () => {
-    if (isMoving) {
-        isMoving = false
-    }
+  if (isMoving) {
+    isMoving = false
+  }
 }
 
 </script>
