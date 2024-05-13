@@ -58,15 +58,19 @@ function parseIrap(source) {
     arr.push(value)
   }
 
-  // транспонируем
-  // let arr2 = []
-  // if (mapWidth !== undefined && mapHeight !== undefined) {
-  //   for (let h = 0; h < mapHeight; h++ ) {
-  //     for (let w = 0; w < mapWidth; w++ ) {
-  //       arr2.push(arr[w * mapHeight + h])
-  //     }
-  //   }
-  // }
+  // переворачиваем карту (т.к. она перевернется в шейдере, по-хорошему надо
+  // в шейдере как-надо перевернуть)
+  if (mapWidth !== undefined && mapHeight !== undefined) {
+    for (let h = 0; h < Math.floor(mapHeight / 2); h++ ) {
+      for (let w = 0; w < mapWidth; w++ ) {
+        const index1 = h * mapWidth + w
+        const index2 = (mapHeight - h - 1) * mapWidth + w
+        const value = arr[index1]
+        arr[index1] = arr[index2]
+        arr[index2] = value
+      }
+    }
+  }
 
   const mapImage = new Float32Array(arr)
   return {mapWidth, mapHeight, mapMinValue, mapMaxValue, mapImage}
