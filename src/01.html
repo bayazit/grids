@@ -96,12 +96,22 @@ void main() {
 
   float isolinePosition = abs((val - uBaseline) / uIsolineStep);
   float deltaPosition = abs(isolinePosition - round(isolinePosition));
-  deltaPosition /= f * 30.0;
+
+  float fifthIsolinePosition = isolinePosition / uMajorIsoline;
+  fifthIsolinePosition = fifthIsolinePosition > round(fifthIsolinePosition) ?
+    fifthIsolinePosition - round(fifthIsolinePosition) :
+    round(fifthIsolinePosition) - fifthIsolinePosition;
+  bool isFifthIsoline = fifthIsolinePosition < 0.01;
+  deltaPosition /= f;
   // Горизонтальные, вертиклальные линии: 0.00375, 0.0025
   // float edge0 = 0.00375;
   // float edge1 = 0.0025;
-  float edge0 = 0.00375;
-  float edge1 = 0.0025;
+  float edge0 = 0.125;
+  float edge1 = 0.075;
+  if (isFifthIsoline) {
+    edge0 *= 3.0;
+    edge1 *= 3.0;
+  }
   outColor = mix(depthColor, isolineColor, smoothstep(edge0, edge1, deltaPosition));
 }
 `;
@@ -143,8 +153,8 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   const uRangeMaxLocation = gl.getUniformLocation(program, "uRangeMax");
   const uPaletteLocation = gl.getUniformLocation(program, "uPalette");
 
-  const uIsolineStepLocation = gl.getUniformLocation(program, "uIsolineStep");
   const uBaselineLocation = gl.getUniformLocation(program, "uBaseline");
+  const uIsolineStepLocation = gl.getUniformLocation(program, "uIsolineStep");
   const uMajorIsolineLocation = gl.getUniformLocation(program, "uMajorIsoline");
   const uMinorIsolineWidthLocation = gl.getUniformLocation(program, "uMinorIsolineWidth");
   const uMajorIsolineWidthLocation = gl.getUniformLocation(program, "uMajorIsolineWidth");
@@ -214,23 +224,12 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
 
   function drawWithKernel() {
     webglUtils.resizeCanvasToDisplaySize(gl.canvas, window.devicePixelRatio);
-
-    // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    // Clear the canvas
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Tell it to use our program (pair of shaders)
     gl.useProgram(program);
-
-    // Bind the attribute/buffer set we want.
     gl.bindVertexArray(vao);
-
-    // Tell the shader to get the texture from texture unit 0
     gl.uniform1i(uImageLocation, 0);
-
     gl.uniform1f(uRangeMinLocation, rangeMin)
     gl.uniform1f(uRangeMaxLocation, rangeMax)
     gl.uniform4fv(uPaletteLocation, palette);
@@ -242,8 +241,8 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
     gl.uniformMatrix3fv(uProjectionLocation, false, projection);
 
     gl.uniform1f(uNullValueLocation, IRAP_NULL_VALUE)
-    gl.uniform1f(uIsolineStepLocation, 5)
     gl.uniform1f(uBaselineLocation, 0)
+    gl.uniform1f(uIsolineStepLocation, 5)
     gl.uniform1f(uMajorIsolineLocation, 5)
     gl.uniform1f(uMinorIsolineWidthLocation, 1)
     gl.uniform1f(uMajorIsolineWidthLocation, 3)
@@ -316,9 +315,7 @@ canvas.onwheel = (event) => {
     zoom.x = zoom.x * k - event.offsetX * window.devicePixelRatio * (k - 1)
   }
   zoom.ky *= k
-  // zoom.kx *= k
   zoom.y = zoom.y * k - event.offsetY * window.devicePixelRatio * (k - 1)
-  // zoom.x = zoom.x * k - event.offsetX * window.devicePixelRatio * (k - 1)
 
   render01()
 }
