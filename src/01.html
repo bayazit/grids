@@ -104,7 +104,7 @@ void main() {
   // outColor = d < 0.5 * f || d5 < 1.5 * f ? vec4(0, 0, 0, 1) : vec4(1, 1, 1, 1);
 
   // outColor = mix(depthColor, isolineColor, smoothstep(edge0, edge1, deltaPosition));
-  outColor = mix(depthColor, isolineColor, d < 0.5 * f || d5 < 1.5 * f ? 1.0 : 0.0);
+  outColor = mix(depthColor, isolineColor, d < 1.0 * f || d5 < 2.0 * f ? 1.0 : 0.0);
 }
 `;
 
@@ -281,7 +281,7 @@ const render01 = () => {
   render(mapImage, mapWidth, mapHeight, mapMinValue, mapMaxValue, paletteAmplitude)
 }
 
-fetch('data/M.irap')
+fetch('data/H_U1-1.irap')
   .then(res => res.text())
   .then(text => {
     const a = parseIrap(text)
