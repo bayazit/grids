@@ -2,8 +2,6 @@
 
 precision highp float;
 
-const float SQRT2 = 1.41421356;
-const float PI = 3.14159265359;
 const vec4 isolineColor = vec4(0.0, 0.0, 0.0, 1.0);
 
 uniform sampler2D uImage;
@@ -21,10 +19,10 @@ out vec4 outColor;
 
 mat2 getTexturePixels2x2(vec2 texCoord, vec2 onePixelSize) {
   return mat2(
-    texture(uImage, onePixelSize * (texCoord + vec2(0.5, 0.5))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(1.5, 0.5))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(0.5, 1.5))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(1.5, 1.5))).r
+    texture(uImage, onePixelSize * (texCoord + vec2(0, 0))).r,
+    texture(uImage, onePixelSize * (texCoord + vec2(1, 0))).r,
+    texture(uImage, onePixelSize * (texCoord + vec2(0, 1))).r,
+    texture(uImage, onePixelSize * (texCoord + vec2(1, 1))).r
   );
 }
 

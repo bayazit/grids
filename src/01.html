@@ -257,10 +257,10 @@ canvas.onmouseup = () => {
 }
 
 async function loadGlsl() {
-   let response = await fetch('glsl/bilinearVertex.glsl')
+   let response = await fetch(`glsl/${vertexShaderFilename}`)
    vertexShaderSource = await response.text()
 
-  response = await fetch('glsl/bilinearFragment.glsl')
+  response = await fetch(`glsl/${fragmentShaderFilename}`)
   fragmentShaderSource = await response.text()
 
   loadMap()
