@@ -14,15 +14,16 @@ uniform float uBaseline;
 uniform float uMajorIsoline;
 uniform float uMinorIsolineWidth;
 uniform float uMajorIsolineWidth;
-in vec2 vTexCoord;
+in vec2 vUv;
 out vec4 outColor;
 
-mat2 getTexturePixels2x2(vec2 texCoord, vec2 onePixelSize) {
+mat2 getTexturePixels2x2(vec2 truncUv, vec2 texSize) {
+  vec2 uvNorm = (truncUv + 0.05) / texSize;
   return mat2(
-    texture(uImage, onePixelSize * (texCoord + vec2(0, 0))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(1, 0))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(0, 1))).r,
-    texture(uImage, onePixelSize * (texCoord + vec2(1, 1))).r
+    textureOffset(uImage, uvNorm, ivec2(0, 0)).r,
+    textureOffset(uImage, uvNorm, ivec2(1, 0)).r,
+    textureOffset(uImage, uvNorm, ivec2(0, 1)).r,
+    textureOffset(uImage, uvNorm, ivec2(1, 1)).r
   );
 }
 
@@ -39,14 +40,12 @@ vec4 getPalleteColor(float val) {
 }
 
 void main() {
-  ivec2 texSize = textureSize(uImage, 0);
-  vec2 onePixelSize = 1.0 / vec2(texSize);
+  vec2 texSize = vec2(textureSize(uImage, 0));
 
-  vec2 textureCoord = vTexCoord / onePixelSize - vec2(0.5);
-  vec2 truncTextureCoord = trunc(textureCoord);
-  vec2 dxy = textureCoord - truncTextureCoord;
+  vec2 truncUv = trunc(vUv);
+  vec2 dxy = vUv - truncUv;
 
-  mat2 A = getTexturePixels2x2(truncTextureCoord, onePixelSize);
+  mat2 A = getTexturePixels2x2(truncUv, texSize);
 
   if (isEmpty(A[0][0]) || isEmpty(A[0][1]) || isEmpty(A[1][0]) || isEmpty(A[1][1])) {
     discard;
