@@ -207,6 +207,9 @@ function loadMap() {
       mapMinValue = a.mapMinValue
       mapMaxValue = a.mapMaxValue
       mapImage = a.mapImage
+      zoom.x = ((document.body.clientWidth - 200) - a.mapWidth) / 2
+      zoom.kx = (document.body.clientHeight - 20) / (document.body.clientWidth - 200)
+
       render01()
     })
     .catch(e => console.error(e));

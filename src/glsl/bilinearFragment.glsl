@@ -19,6 +19,11 @@ out vec4 outColor;
 
 const float FIX_ERROR = 0.05;
 
+float getTexturePixels1x1(vec2 truncUv, vec2 texSize) {
+  vec2 uvNorm = (truncUv + FIX_ERROR) / texSize;
+  return textureOffset(uImage, uvNorm, ivec2(0, 0)).r;
+}
+
 mat2 getTexturePixels2x2(vec2 truncUv, vec2 texSize) {
   vec2 uvNorm = (truncUv + FIX_ERROR) / texSize;
   return mat2(
@@ -95,37 +100,49 @@ void main() {
   vec2 texSize = vec2(textureSize(uImage, 0));
   vec2 truncUv = trunc(vUv);
   vec2 dxy = vUv - truncUv;
-  bool bilinear = false;
   float val;
+  float valLinear;
+  float valBicubic;
+  // Интерполяция
+  // 1 - без интерполяции
+  // 2 - билинейная интерполяция
+  // 3 - бикубическая интерполяция
+  int uMapInterpolation = 0;
+  int uIsolineInterpolation = 1;
   bool isDiscard = false;
+  bool bilinear = false;
 
-  if (bilinear) {
-    mat2 A = getTexturePixels2x2(truncUv, texSize);
+  val = getTexturePixels1x1(truncUv, texSize);
 
-    if (isEmpty(A[0][0]) || isEmpty(A[0][1]) || isEmpty(A[1][0]) || isEmpty(A[1][1])) {
-      isDiscard = true;
-    } else {
-      val = dot(vec2(1.0 - dxy.x, dxy.x) * A, vec2(1.0 - dxy.y, dxy.y));
-    }
+  mat2 A = getTexturePixels2x2(truncUv, texSize);
+
+  if (isEmpty(A[0][0]) || isEmpty(A[0][1]) || isEmpty(A[1][0]) || isEmpty(A[1][1])) {
+    isDiscard = true;
   } else {
-    mat4 B = getTexturePixels4x4(truncUv, texSize);
-    if (isEmpty(B[0][0]) || isEmpty(B[0][3]) || isEmpty(B[3][0]) || isEmpty(B[3][3]))
-    {
-      isDiscard = true;
-    } else {
-      vec4 A = calcSamplingFourItems(dxy.x, truncUv.x, texSize.x + 3.0);
-      vec4 C = calcSamplingFourItems(dxy.y, truncUv.y, texSize.y + 3.0);
-      val = dot(A * B, C);
-    }
+    valLinear = dot(vec2(1.0 - dxy.x, dxy.x) * A, vec2(1.0 - dxy.y, dxy.y));
+  }
+
+  mat4 B = getTexturePixels4x4(truncUv, texSize);
+  if (isEmpty(B[0][0]) || isEmpty(B[0][3]) || isEmpty(B[3][0]) || isEmpty(B[3][3]))
+  {
+    isDiscard = true;
+  } else {
+    vec4 A = calcSamplingFourItems(dxy.x, truncUv.x, texSize.x + 3.0);
+    vec4 C = calcSamplingFourItems(dxy.y, truncUv.y, texSize.y + 3.0);
+    valBicubic = dot(A * B, C);
   }
 
   if (isDiscard) {
     outColor = vec4(0.8, 0.8, 0.8, 1);
   } else {
-    float f = length(vec2(dFdx(val), dFdy(val)));
-    vec4 depthColor = getPalleteColor(val);
+    float valForMap = uMapInterpolation == 2 ? valBicubic :
+                      uMapInterpolation == 1 ? valLinear : val;
+    vec4 depthColor = getPalleteColor(valForMap);
 
-    float p = val - uBaseline;
+    float valForIsoline = uIsolineInterpolation == 2 ? valBicubic :
+                          uIsolineInterpolation == 1 ? valLinear : val;
+    float f = length(vec2(dFdx(valForIsoline), dFdy(valForIsoline)));
+    float p = valForIsoline - uBaseline;
     float r = round(p / uIsolineStep) * uIsolineStep;
     float d = r < p ? p - r : r - p;
 
