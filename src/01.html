@@ -33,6 +33,8 @@ const zoom = {
     ky : 1
 }
 
+let drawShader = () => {}
+
 function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   const gl = canvas.getContext("webgl2");
   if (!gl) {
@@ -119,9 +121,7 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   setRectangle(gl, 0, 0, canvas.width, canvas.height);
 
-  drawWithKernel();
-
-  function drawWithKernel() {
+  drawShader = () => {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -150,6 +150,8 @@ function render(image, imageWidth, imageHeight, rangeMin, rangeMax, palette) {
     const count = 6;
     gl.drawArrays(primitiveType, offset, count);
   }
+
+  drawShader()
 }
 
 function setRectangle(gl, x, y, width, height) {
@@ -185,6 +187,17 @@ const render01 = () => {
   render(mapImage, mapWidth, mapHeight, mapMinValue, mapMaxValue, paletteAmplitude)
 }
 
+const setCanvasSizeAndCalcZoom = () => {
+  const canvas = document.querySelector("#canvas");
+  const canvasWidth = document.body.clientWidth - 200
+  const canvasHeight = document.body.clientHeight - 20
+  canvas.style.width = `${canvasWidth}px`
+  canvas.style.height = `${canvasHeight}px`
+  canvas.width = canvasWidth * window.devicePixelRatio
+  canvas.height = canvasHeight * window.devicePixelRatio
+  zoom.kx = canvas.height / canvasWidth
+}
+
 function loadMap() {
   // fetch('data/Grid.irap')
   fetch('data/H_U1-1.irap')
@@ -197,14 +210,7 @@ function loadMap() {
       mapMaxValue = a.mapMaxValue
       mapImage = a.mapImage
 
-      const canvas = document.querySelector("#canvas");
-      const canvasWidth = document.body.clientWidth - 200
-      const canvasHeight = document.body.clientHeight - 20
-      canvas.style.width = `${canvasWidth}px`
-      canvas.style.height = `${canvasHeight}px`
-      canvas.width = canvasWidth * window.devicePixelRatio
-      canvas.height = canvasHeight * window.devicePixelRatio
-      zoom.kx = canvas.height / canvasWidth
+      setCanvasSizeAndCalcZoom()
 
       render01()
     })
@@ -228,7 +234,7 @@ canvas.onwheel = (event) => {
   zoom.ky *= k
   zoom.y = zoom.y * k - event.offsetY * window.devicePixelRatio * (k - 1)
 
-  render01()
+  drawShader()
 }
 
 canvas.onmousedown = (event) => {
@@ -243,7 +249,7 @@ canvas.onmousemove = (event) => {
     zoom.y += (event.offsetY - mouseY) * window.devicePixelRatio
     mouseX = event.offsetX
     mouseY = event.offsetY
-    render01()
+    drawShader()
   }
 }
 
